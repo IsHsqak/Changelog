@@ -316,7 +316,7 @@
     if(!c){$('detail').innerHTML='<section class="card"><p class="empty">Ändringen hittades inte.</p></section>';$('dTitle').textContent='Ändring';$('dStatus').innerHTML='';$('dMeta').textContent='';$('dWarn').hidden=true;return}
     $('dTitle').textContent='Ändring '+c._id;
     $('dStatus').innerHTML=pill(c.status);
-    $('dEdit').disabled=!canWrite||!db;
+    $('dEdit').disabled=!canWrite||!db;$('dDel').disabled=!canWrite||!db;
     var w=[];
     if(qMissing(c))w.push('Kvalitépåverkan är markerad men ändringen är inte synkad med Q.');
     var dw=$('dWarn');dw.hidden=!w.length;dw.innerHTML=w.map(function(t){return '<p>'+esc(t)+'</p>'}).join('');
@@ -955,7 +955,7 @@
     if(!r){$('fdetail').innerHTML='<section class="card"><p class="empty">Felsökningen hittades inte.</p></section>';$('fTitle').textContent='Felsökning';$('fStatus').innerHTML='';$('fMeta').textContent='';return}
     $('fTitle').textContent='Felsökning '+r._id;
     $('fStatus').innerHTML=r.status?fsPill(r.status):'';
-    $('fEditBtn').disabled=!canWrite||!db;
+    $('fEditBtn').disabled=!canWrite||!db;$('fDel').disabled=!canWrite||!db;
     var rows=[];
     ffOn().forEach(function(f){if(f.type==='images')return;rows.push([f.label,fsValue(r,f)])});
     var gal=(r.images&&r.images.length)?'<div class="gallery">'+galleryHtml(r.images,false)+'</div>':'';
@@ -1060,6 +1060,16 @@
   });
   $('subNav').addEventListener('click',function(e){var b=e.target.closest('button[data-v]');if(b)show(b.dataset.v)});
 
+  // ---------- ta bort post ----------
+  async function removeRec(col,id,noun,after){
+    if(!db||!canWrite)return;
+    if(!confirm('Ta bort '+noun+' '+id+'?\n\nPosten och dess historik raderas. En säkerhetskopia av alla data sparas först i mappen backup.'))return;
+    try{
+      await db.backup('fore-borttagning-'+id);
+      await db.doc(col+'/'+id).delete();
+      after();
+    }catch(e){alert('Det gick inte att ta bort'+(e&&e.message?': '+e.message:'')+'.')}
+  }
   // ---------- händelser ----------
   $('goNew').onclick=function(){newForm();show('ny')};
   $('cancelBtn').onclick=function(){show('andringar')};
@@ -1071,6 +1081,8 @@
   $('chips').onclick=function(e){var b=e.target.closest('[data-chip]');if(b){chip=b.dataset.chip;renderList()}};
   $('tbl').onclick=function(e){var b=e.target.closest('[data-open]');if(b)showDetail(b.dataset.open)};
   $('dBack').onclick=function(){show('andringar')};
+  $('dDel').onclick=function(){if(viewing)removeRec('changes',viewing,'ändring',function(){viewing=null;show('andringar')})};
+  $('fDel').onclick=function(){if(fsViewing)removeRec('felsokning',fsViewing,'felsökning',function(){fsViewing=null;show('flog')})};
   $('dEdit').onclick=function(){if(viewing)openChange(viewing)};
   $('procTbl').onclick=function(e){var b=e.target.closest('[data-proc]');if(b)editProc(procById(b.dataset.proc))};
   ['f_q','f_fabrik','f_proc','f_ans','f_status'].forEach(function(id){$(id).addEventListener('input',renderList)});
