@@ -10,19 +10,13 @@
 <div class="wrap">
 <div class="topbar">
   <h1>Ändringslogg PLC</h1>
-  <nav class="tabs" aria-label="Vyer">
-    <button type="button" data-view="andringar">Ändringar</button>
-    <button type="button" data-view="ny">Ny / redigera</button>
-    <button type="button" data-view="processer">Processer</button>
-    <button type="button" data-view="import">Importera</button>
-    <button type="button" data-view="tech">Tech Foundation</button>
-  </nav>
+  <nav class="tabs" id="mainNav" aria-label="Huvudmeny"></nav>
   <span class="who"><span id="who"></span><br><span id="sync"></span></span>
 </div>
 <div class="callout" id="banner" hidden></div>
+<div class="subbar" id="subNav" role="group" aria-label="Undermeny"></div>
 <div id="lb" hidden><img alt="Förstorad bild" id="lbImg"></div>
 
-<!-- ============ ÄNDRINGAR (lista + uppföljning) ============ -->
 <main id="v-setup" class="stack" hidden>
   <section class="card">
     <h2>Välj datamapp</h2>
@@ -41,6 +35,7 @@
   </section>
 </main>
 
+<!-- ============ ÄNDRINGSLOGG (lista + uppföljning) ============ -->
 <main id="v-andringar" class="stack">
   <div class="callout" id="conflictBox" hidden></div>
   <div class="chips" id="chips" role="group" aria-label="Uppföljning"></div>
@@ -91,14 +86,10 @@
 
 <section class="card process" aria-labelledby="h-proc">
   <h2 id="h-proc"><span id="formTitle">Ny ändring</span></h2>
-  <div class="row">
-    <label>Process
-      <select id="procSel"></select>
-    </label>
-    <button type="button" id="applyProc">Fyll i från process</button>
-    <button type="button" id="newChange">Ny ändring, behåll process</button>
-  </div>
-  <p class="hint">Processen fyller i fabrik, maskin, PLC‑plattform och verifierare. Avsnitt 2 fylls aldrig i automatiskt.</p>
+  <label>Process
+    <select id="procSel"></select>
+  </label>
+  <p class="hint">Fabrik, maskin och PLC‑plattform fylls i när du väljer process. Du kan ändra dem själv efteråt.</p>
 </section>
 
 <section class="card" aria-labelledby="h1">
@@ -107,7 +98,7 @@
     <label>Ändrings‑ID<input type="text" id="id" readonly placeholder="Tilldelas när du sparar"></label>
     <label>Datum<input type="date" id="datum"></label>
     <label>Ansvarig (fullständigt namn)<input type="text" id="ansvarig" autocomplete="name"></label>
-    <label>Initialer (till översikten)<input type="text" id="initialer" placeholder="t.ex. IL"></label>
+    <label>Initialer<input type="text" id="initialer" placeholder="t.ex. IL"></label>
     <label>Fabrik<select id="fabrik"><option value=""></option><option>Chain</option><option>Bars</option></select></label>
     <label>Maskin<input type="text" id="maskin"></label>
     <label>PLC‑plattform<input type="text" id="plc"></label>
@@ -143,7 +134,7 @@
     <label class="chk"><input type="checkbox" value="Säkerhetskrav"> Säkerhetskrav</label>
     <label class="chk"><input type="checkbox" value="Kvalitetskrav"> Kvalitetskrav</label>
   </div>
-  <label>Annat<input type="text" id="annat" placeholder="Egen motivering"></label>
+  <label>Övrigt<input type="text" id="annat"></label>
   <div class="stack" id="imgBox">
     <h2>Bilder</h2>
     <div class="row">
@@ -172,35 +163,18 @@
   <div class="callout" id="riskNote" hidden></div>
 </section>
 
-<section class="card" aria-labelledby="h5">
-  <h2 id="h5"><span class="n">5</span>Testning och validering <span class="badge" id="testBadge" hidden>Krävs</span></h2>
-  <div class="grid2">
-    <label>Simulering genomförd
-      <select id="sim"><option value="">Ej angiven</option><option>Ja</option><option>Nej</option><option>Ej aktuellt</option></select>
-    </label>
-    <label>Maskintest genomförd
-      <select id="mtest"><option value="">Ej angiven</option><option>Ja</option><option>Nej</option><option>Ej aktuellt</option></select>
-    </label>
-  </div>
-  <label>Teststeg<textarea id="teststeg" placeholder="1. …&#10;2. …"></textarea></label>
-  <label>Resultat<textarea id="resultat"></textarea></label>
-</section>
-
 <section class="card" aria-labelledby="h6">
-  <h2 id="h6"><span class="n">6</span>Backup‑referenser</h2>
-  <div class="grid2">
-    <label>Backup före ändring<input type="text" id="bak_fore" placeholder="Filnamn eller hel sökväg"></label>
-    <label>Backup efter ändring<input type="text" id="bak_efter" placeholder="Filnamn eller hel sökväg"></label>
-  </div>
+  <h2 id="h6"><span class="n">5</span>Backup‑referenser</h2>
+  <label>Backup efter ändring (filväg)<input type="text" id="bak_efter" placeholder="Filnamn eller hel sökväg"></label>
   <div class="row">
     <button type="button" id="copyFolder">Kopiera sökvägen till backupmappen</button>
     <span class="status" id="folderMsg" role="status"></span>
   </div>
-  <p class="hint">Klistra in backupmappens sökväg i Utforskarens adressfält, markera filen och välj Kopiera som sökväg (Shift + högerklick). Klistra in här. Skriver du bara filnamnet läggs backupmappen (se fliken Processer) till framför.</p>
+  <p class="hint">Klistra in backupmappens sökväg i Utforskarens adressfält, markera filen och välj Kopiera som sökväg (Shift + högerklick). Klistra in här. Skriver du bara filnamnet läggs backupmappen (se Inställningar, Processer) till framför.</p>
 </section>
 
 <section class="card" aria-labelledby="h7">
-  <h2 id="h7"><span class="n">7</span>Godkännande</h2>
+  <h2 id="h7"><span class="n">6</span>Godkännande</h2>
   <div class="grid2">
     <label>Verifierad av<input type="text" id="verifierad"></label>
     <label>Status
@@ -231,6 +205,7 @@
   <div class="callout" id="formMsg" hidden></div>
   <div class="row">
     <button type="button" class="primary" id="saveBtn">Spara ändring</button>
+    <button type="button" id="newBtn">Ny ändring</button>
     <button type="button" id="cancelBtn">Till listan</button>
     <span class="status" id="saveMsg" role="status"></span>
   </div>
@@ -238,26 +213,80 @@
 
 </div>
 
-<aside class="preview" aria-label="Färdig text och historik">
+<aside class="preview" aria-label="Historik">
   <section class="card">
     <h2>Historik</h2>
     <ul class="hist" id="hist"><li class="hint">Historiken visas när ändringen är sparad.</li></ul>
   </section>
+</aside>
+</div>
+</main>
+
+<!-- ============ FELSÖKNINGSLOGG (lista) ============ -->
+<main id="v-flog" class="stack" hidden>
+  <div class="callout" id="fconflictBox" hidden></div>
+  <div class="chips" id="fchips" role="group" aria-label="Uppföljning felsökning"></div>
   <section class="card">
-    <h2>Ändringstext</h2>
-    <div class="row">
-      <button type="button" id="copy">Kopiera ändringstext</button>
-      <span class="status" id="copyMsg" role="status"></span>
+    <div class="filters">
+      <label class="wide">Sök<input type="text" id="ff_q" placeholder="Sök i felsökningar …"></label>
+      <label>Fabrik<select id="ff_fabrik"><option value="">Alla</option><option>Chain</option><option>Bars</option></select></label>
+      <label>Process<select id="ff_proc"><option value="">Alla</option></select></label>
+      <label>Ansvarig<select id="ff_ans"><option value="">Alla</option></select></label>
+      <label>Status<select id="ff_status"><option value="">Alla</option></select></label>
     </div>
-    <div id="out" class="rich" tabindex="0"></div>
+    <div class="row">
+      <button type="button" class="primary" id="fGoNew">Ny felsökning</button>
+      <button type="button" id="fExport">Exportera CSV</button>
+      <span class="status" id="flistMsg" role="status"></span>
+      <span class="hint" id="flistCount"></span>
+    </div>
+    <div class="tblwrap"><table class="list" id="ftbl" aria-label="Felsökningar"></table></div>
+  </section>
+</main>
+
+<!-- ============ VISA FELSÖKNING (skrivskyddad) ============ -->
+<main id="v-fvisa" class="stack" hidden>
+  <section class="card">
+    <div class="row">
+      <h2 style="flex:1 1 auto"><span id="fTitle">Felsökning</span> <span id="fStatus"></span></h2>
+      <button type="button" id="fBack">Till listan</button>
+      <button type="button" class="primary" id="fEditBtn">Redigera</button>
+    </div>
+    <p class="hint" id="fMeta"></p>
+  </section>
+  <div class="cols">
+    <div class="stack" id="fdetail"></div>
+    <aside class="stack">
+      <section class="card">
+        <h2>Historik</h2>
+        <ul class="hist" id="fhist"><li class="hint">Laddar historik …</li></ul>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<!-- ============ NY / REDIGERA FELSÖKNING ============ -->
+<main id="v-fny" hidden>
+<div class="cols">
+<div class="stack">
+  <section class="card">
+    <h2 id="fFormTitle">Ny felsökning</h2>
+    <div class="grid2" id="fForm"></div>
   </section>
   <section class="card">
-    <h2>Översikt</h2>
+    <div class="callout" id="fFormMsg" hidden></div>
     <div class="row">
-      <button type="button" id="copyOv">Kopiera översiktsrad</button>
-      <span class="status" id="copyOvMsg" role="status"></span>
+      <button type="button" class="primary" id="fSave">Spara felsökning</button>
+      <button type="button" id="fNewBtn">Ny felsökning</button>
+      <button type="button" id="fCancel">Till listan</button>
+      <span class="status" id="fSaveMsg" role="status"></span>
     </div>
-    <div class="tblwrap"><table id="ovTable" aria-label="Förhandsvisning av översiktsrad"></table></div>
+  </section>
+</div>
+<aside class="preview" aria-label="Historik">
+  <section class="card">
+    <h2>Historik</h2>
+    <ul class="hist" id="fHistForm"><li class="hint">Historiken visas när felsökningen är sparad.</li></ul>
   </section>
 </aside>
 </div>
@@ -322,7 +351,7 @@
 <main id="v-processer" class="stack" hidden>
   <section class="card">
     <h2>Processer</h2>
-    <p class="hint">Gemensam lista för alla användare. Fabrik, maskin, PLC‑plattform och verifierare fylls i när någon väljer processen i en ny ändring. Gamla ändringar påverkas inte av ändringar här.</p>
+    <p class="hint">Gemensam lista för alla användare. Fabrik, maskin och PLC‑plattform fylls i när någon väljer processen i en ny ändring eller felsökning. Gamla ändringar påverkas inte av ändringar här.</p>
     <div class="tblwrap"><table class="list" id="procTbl" aria-label="Processer"></table></div>
     
   </section>
@@ -333,13 +362,26 @@
       <label>Fabrik<select id="p_fabrik"><option value=""></option><option>Chain</option><option>Bars</option></select></label>
       <label>Maskin<input type="text" id="p_maskin"></label>
       <label>PLC‑plattform<input type="text" id="p_plc"></label>
-      <label>Verifierad av (standard)<input type="text" id="p_verifierad"></label>
     </div>
     <div class="row">
       <button type="button" class="primary" id="saveProc">Spara process</button>
       <button type="button" id="newProc">Ny process</button>
       <button type="button" class="danger" id="delProc" hidden>Ta bort process</button>
       <span class="status" id="procMsg" role="status"></span>
+    </div>
+  </section>
+  <section class="card">
+    <h2>Fält i Felsökning</h2>
+    <p class="hint">Bestäm vilka uppgifter en felsökning har, i vilken ordning de visas och vilka som är kolumner i listan. Ändringar gäller för alla. Redan sparade felsökningar behåller sina uppgifter även om du döljer ett fält.</p>
+    <div id="ffields"></div>
+    <div class="row" style="align-items:end">
+      <label style="flex:1 1 200px">Eget fält, namn<input type="text" id="nf_name"></label>
+      <label style="flex:0 1 160px">Typ
+        <select id="nf_type"><option value="text">Text</option><option value="long">Lång text</option><option value="date">Datum</option><option value="number">Tal</option><option value="select">Val</option></select>
+      </label>
+      <label style="flex:1 1 200px">Alternativ (vid Val, kommaseparerade)<input type="text" id="nf_opts"></label>
+      <button type="button" class="primary" id="nf_add">Lägg till fält</button>
+      <button type="button" id="nf_reset">Återställ standardfält</button>
     </div>
   </section>
   <section class="card">

@@ -6,13 +6,20 @@
 
 ## Funktioner
 
-- **Ändringar:** lista med uppföljningschips (Öppna, Väntar på godkännande, Test saknas, Q ej synkad, Säkerhet/kvalité), sök och filter, export till CSV.
-- **Visa ändring:** skrivskyddad sida med all information, bilder och historik. Knapp för att redigera.
-- **Ny / redigera:** formulär enligt ändringsmallen (avsnitt 1–7), automatisk översiktsrad, bilder, kopiering av ändringstext och översiktsrad.
-- **Processer:** gemensam processlista med fabrik, maskin, PLC-plattform och verifierare som förifyller nya ändringar.
-- **Importera:** klistra in den gamla översiktstabellen från OneNote.
-- **Tech Foundation:** loggbok med en rubrik per datum.
-- **Historik och säkerhetskopior:** varje sparning loggas med vem och vad. En säkerhetskopia av allt skapas automatiskt en gång per dag.
+Menyn har tre huvudknappar med undermenyer:
+
+- **Ändringar**
+  - **Ändringslogg:** lista med uppföljningschips (Öppna, Väntar på godkännande, Q ej synkad, Säkerhet/kvalité), sök och filter, export till CSV. Klick på en rad öppnar en skrivskyddad sida med all information, bilder och historik, med knapp för att redigera.
+  - **Ny / Redigera:** formulär med avsnitt 1–6 (allmän information, påverkade komponenter, beskrivning med bilder, risk, backup, godkännande) och en översiktsrad som visas i listan. Initialerna fylls i av namnet, och fabrik, maskin och PLC-plattform fylls i när du väljer process.
+  - **Tech Foundation:** loggbok med en rubrik per datum, sök och import av text.
+- **Felsökning**
+  - **Felsökningslogg:** lista med chips per status, sök, filter och export till CSV.
+  - **Ny felsökning:** formulär vars fält bestäms under Inställningar. Skrivskyddad visning och historik som för ändringar.
+- **Inställningar**
+  - **Processer:** gemensam processlista (fabrik, maskin, PLC-plattform), fält i Felsökning, backupmapp och säkerhetskopiering.
+  - **Importera:** klistra in den gamla översiktstabellen från OneNote.
+
+Varje sparning loggas med vem och vad. En säkerhetskopia av allt skapas automatiskt en gång per dag.
 
 ## Krav
 
@@ -24,11 +31,11 @@
 
 1. Skapa SharePoint-biblioteket och två mappar i det: `App` och `Data`.
 2. Kopiera `index.html`, `css/` och `js/` från det här repot till `App`.
-3. Valfritt: packa upp `Andringslogg-data.zip` (migrerad data) i `Data`, så att mappen innehåller `changes`, `processes`, `techlog`, `settings`, `images` och `backup`. En tom `Data`-mapp fungerar också, då skapas strukturen automatiskt.
+3. Valfritt: packa upp `Andringslogg-data.zip` (migrerad data) i `Data`, så att mappen innehåller `changes`, `processes`, `techlog`, `felsokning`, `settings`, `images` och `backup`. En tom `Data`-mapp fungerar också, då skapas strukturen automatiskt.
 4. Alla i teamet synkar biblioteket med OneDrive (knappen Synkronisera i biblioteket).
 5. Öppna `App/index.html` i den synkade mappen med Edge (dubbelklicka eller öppna som `file:///…`).
 6. Tryck **Välj datamapp**, peka ut `Data`-mappen och tillåt att webbläsaren ändrar filerna. Mappen kommer ihåg valet. Webbläsaren kan be om tillåtelse igen vid nästa besök, då trycker du Fortsätt.
-7. Första gången: fyll i ditt namn och dina initialer i en ny ändring. De sparas i den webbläsaren och används i historiken.
+7. Första gången: fyll i ditt fullständiga namn i en ny ändring. Initialerna fylls i automatiskt (första bokstaven i varje namn). Namnet sparas i den webbläsaren och används som ansvarig och i historiken.
 
 Går det inte att öppna appen från en lokal fil kan `index.html`, `css/` och `js/` i stället läggas på en intern webbserver över https. Appen innehåller inga data.
 
@@ -39,6 +46,7 @@ Data/
   changes/     en JSON-fil per ändring (001.json, 002.json, …) inklusive historik
   processes/   en JSON-fil per process
   techlog/     en JSON-fil per loggboksanteckning
+  felsokning/  en JSON-fil per felsökning (F001.json, …) inklusive historik
   settings/    app.json (gemensamma inställningar, till exempel backupmapp)
   images/      bilder
   backup/      säkerhetskopior (backup-ÅÅÅÅ-MM-DD-HHMM.json)
