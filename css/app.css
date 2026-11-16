@@ -105,3 +105,10 @@ ul.hist li{border-left:3px solid var(--line);padding-left:10px;font-size:.85rem}
 ul.hist .when{color:var(--muted);font-size:.78rem}
 ul.hist .chg{margin:2px 0 0;overflow-wrap:anywhere}
 ul.hist .chg i{color:var(--muted);font-style:normal}
+.subbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 10px}
+.subbar button{border-color:transparent;background:transparent;border-radius:0;border-bottom:3px solid transparent;padding:6px 10px}
+.subbar button[aria-current="page"]{border-bottom-color:var(--accent);color:var(--accent)}
+.frow{display:grid;grid-template-columns:auto minmax(120px,1.4fr) minmax(110px,.8fr) auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.frow:last-child{border-bottom:0}
+@media(max-width:700px){.frow{grid-template-columns:auto minmax(0,1fr)}.frow>*:nth-child(n+3){grid-column:2}}
+.fhead{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}

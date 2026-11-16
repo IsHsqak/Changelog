@@ -8,14 +8,15 @@
   function pad3(n){n=String(n);while(n.length<3)n='0'+n;return n}
   function flat(v){return String(v||'').trim().replace(/\s*\n\s*/g,' ')}
   function one(v){return String(v||'').trim().replace(/\s*\n\s*/g,', ')}
+  function clone(o){return JSON.parse(JSON.stringify(o))}
   function indent(v){return String(v).trim().split('\n').join('\n  ')}
 
   var BAK='';
 
-  var FIELDS=['id','datum','ansvarig','initialer','fabrik','maskin','plc','progblock','datablock','hmi','fplc','komm','ovrigt','beskrivning','orsak','annat','saf','kval','saf_txt','kval_txt','sim','mtest','teststeg','resultat','bak_fore','bak_efter','verifierad','status','kommentar'];
+  var FIELDS=['id','datum','ansvarig','initialer','fabrik','maskin','plc','progblock','datablock','hmi','fplc','komm','ovrigt','beskrivning','orsak','annat','saf','kval','saf_txt','kval_txt','bak_efter','verifierad','status','kommentar'];
   var OV=['ov_block','ov_besk','ov_orsak','ov_komm','ov_verif','ov_godk'];
-  var PFIELDS=['fabrik','maskin','plc','verifierad'];
-  var LABEL={id:'Ändrings-ID',datum:'Datum',ansvarig:'Ansvarig',initialer:'Initialer',fabrik:'Fabrik',maskin:'Maskin',plc:'PLC-plattform',progblock:'Programblock',datablock:'Datablocker',hmi:'HMI',fplc:'Säkerhetslogik (F-PLC)',komm:'Kommunikation/nätverk',ovrigt:'Övrigt',beskrivning:'Beskrivning',orsak:'Orsak',annat:'Annat (motivering)',saf:'Säkerhetspåverkan',kval:'Kvalitépåverkan',saf_txt:'Motivering säkerhet',kval_txt:'Motivering kvalité',sim:'Simulering',mtest:'Maskintest',teststeg:'Teststeg',resultat:'Resultat',bak_fore:'Backup före',bak_efter:'Backup efter',verifierad:'Verifierad av',status:'Status',kommentar:'Kommentarer',qsync:'Synkad med Q',motiv:'Motivering',procName:'Process',images:'Bilder'};
+  var PFIELDS=['fabrik','maskin','plc'];
+  var LABEL={id:'Ändrings-ID',datum:'Datum',ansvarig:'Ansvarig',initialer:'Initialer',fabrik:'Fabrik',maskin:'Maskin',plc:'PLC-plattform',progblock:'Programblock',datablock:'Datablocker',hmi:'HMI',fplc:'Säkerhetslogik (F-PLC)',komm:'Kommunikation/nätverk',ovrigt:'Övrigt',beskrivning:'Beskrivning',orsak:'Orsak',annat:'Övrigt (motivering)',saf:'Säkerhetspåverkan',kval:'Kvalitépåverkan',saf_txt:'Motivering säkerhet',kval_txt:'Motivering kvalité',sim:'Simulering',mtest:'Maskintest',teststeg:'Teststeg',resultat:'Resultat',bak_fore:'Backup före',bak_efter:'Backup efter',verifierad:'Verifierad av',status:'Status',kommentar:'Kommentarer',qsync:'Synkad med Q',motiv:'Motivering',procName:'Process',images:'Bilder'};
   var OPEN_STATUS=['','Utkast','Under test','Väntar på godkännande'];
 
   // ---------- state ----------
@@ -80,45 +81,7 @@
   // ---------- ändringstext ----------
   function motivList(){
     var l=[];document.querySelectorAll('#motiv input:checked').forEach(function(c){l.push(c.value)});
-    var a=val('annat').trim();if(a)l.push('Annat: '+a);return l;
-  }
-  function build(){
-    var id=val('id').trim(),out=[];
-    out.push('Ändring - ('+(id||'ID')+')');
-    function sec(title,items){
-      var lines=[];
-      items.forEach(function(it){var v=it[1]==null?'':String(it[1]).trim();if(v)lines.push('* '+it[0]+': '+indent(v))});
-      if(lines.length){out.push('');out.push(title);lines.forEach(function(l){out.push(l)})}
-    }
-    sec('1. Allmän information',[['Ändrings-ID',id],['Datum',val('datum')],['Ansvarig',val('ansvarig')],['Fabrik',val('fabrik')],['Process',procName()],['Maskin',val('maskin')],['PLC-plattform',val('plc')]]);
-    sec('2. Påverkade komponenter',[['Programblock',val('progblock')],['Datablocker',val('datablock')],['HMI-sidor eller taggar',val('hmi')],['Säkerhetslogik (F-PLC)',val('fplc')],['Kommunikationsmoduler / nätverk',val('komm')],['Övrigt',val('ovrigt')]]);
-    var b3=[];
-    if(val('beskrivning').trim())b3.push('Beskrivning: '+indent(val('beskrivning')));
-    if(val('orsak').trim())b3.push('Orsak: '+indent(val('orsak')));
-    var m=motivList();if(m.length)b3.push('Motivering: '+m.join(', '));
-    if(b3.length){out.push('');out.push('3. Beskrivning av ändringen och anledning till ändringen');b3.forEach(function(l){out.push(l)})}
-    var saf=val('saf'),kv=val('kval');
-    var st=saf+(val('saf_txt').trim()?' - '+val('saf_txt').trim():'');
-    var kt=kv+(val('kval_txt').trim()?' - '+val('kval_txt').trim():'');
-    if(kv==='Ja')kt+=' (Synkad med Q: '+($('qsync').checked?'ja':'nej')+')';
-    sec('4. Risk- och konsekvensanalys',[['Säkerhetspåverkan',st],['Kvalitépåverkan',kt]]);
-    sec('5. Testning och validering',[['Simulering genomförd',val('sim')],['Maskintest genomförd',val('mtest')],['Teststeg',val('teststeg')],['Resultat',val('resultat')]]);
-    sec('6. Backup-referenser',[['Backup före ändring',bakText(val('bak_fore'))],['Backup efter ändring',bakText(val('bak_efter'))]]);
-    sec('7. Godkännande',[['Verifierad av',val('verifierad')],['Status',val('status')],['Kommentarer',val('kommentar')]]);
-    return out.join('\n');
-  }
-  var FONT="font-family:'Segoe UI',sans-serif;";
-  function buildHtml(){
-    var h=[],first=true;
-    build().split('\n').forEach(function(l,i){
-      if(!l.trim())return;
-      var isH=i===0||/^\d\.\s/.test(l);
-      var txt=esc(l).replace(/^ +/,'&nbsp;&nbsp;');
-      if(isH)h.push('<p class="h" style="'+FONT+'font-size:18pt;font-weight:bold;margin:'+(first?'0':'12pt')+' 0 0 0">'+txt+'</p>');
-      else h.push('<p style="'+FONT+'font-size:12pt;font-weight:normal;margin:0">'+txt+'</p>');
-      first=false;
-    });
-    return h.join('');
+    var a=val('annat').trim();if(a)l.push('Övrigt: '+a);return l;
   }
   function short(s,n){
     s=flat(s);if(s.length<=n)return s;
@@ -127,10 +90,10 @@
     var c=s.slice(0,n),i=c.lastIndexOf(' ');
     return (i>n*0.6?c.slice(0,i):c).replace(/[,;:\s]+$/,'')+'…';
   }
-  function initials(){
-    var i=val('initialer').trim();if(i)return i;
-    return val('ansvarig').trim().split(/\s+/).filter(Boolean).map(function(w){return w[0].toUpperCase()}).join('');
-  }
+  // Initialer = första bokstaven i varje namn
+  function autoInit(name){return String(name||'').trim().split(/\s+/).filter(Boolean).map(function(w){return w[0].toUpperCase()}).join('')}
+  var initTouched=false;
+  function initials(){return val('initialer').trim()||autoInit(val('ansvarig'))}
   function auto(){
     var comps=[val('progblock'),val('datablock'),val('hmi'),val('fplc'),val('komm'),val('ovrigt')].map(one).filter(Boolean);
     return {
@@ -142,25 +105,15 @@
       ov_godk:''
     };
   }
-  var HEAD=['Ändrings-ID','Datum','Ansvarig','Process','Fabrik','Påverkat program/block','Beskrivning','Orsak','Version före','Version efter','Verifierad av','Godkännande','Kommentar'];
-  function ovRow(html){
-    function t(s){s=String(s||'').trim();return html?esc(s):s}
-    return [t(val('id')),t(val('datum')),t(initials()),t(procName()),t(val('fabrik')),
-      t(flat(val('ov_block'))),t(flat(val('ov_besk'))),t(flat(val('ov_orsak'))),'','',t(flat(val('ov_verif'))),t(flat(val('ov_godk'))),t(flat(val('ov_komm')))];
-  }
   function render(){
-    var saf=val('saf')==='Ja',kv=val('kval')==='Ja';
-    $('testBadge').hidden=!(saf||kv);
+    var kv=val('kval')==='Ja';
     $('qrow').hidden=!kv;
     var lines=[];
-    if(saf||kv)lines.push('Ändringen påverkar säkerhet eller kvalité. Ta fram ett testförfarande och fyll i testning och validering.');
     if(kv)lines.push('Kvalitépåverkan kan påverka slutkund. Synka med Q.');
     if(val('saf')==='Ej bedömd'||val('kval')==='Ej bedömd')lines.push('Risk- och konsekvensanalysen är inte klar.');
     var n=$('riskNote');n.hidden=!lines.length;n.innerHTML=lines.map(function(l){return '<p>'+esc(l)+'</p>'}).join('');
     var a=auto();
     OV.forEach(function(k){var e=$(k);if(e.dataset.touched!=='1')e.value=a[k]});
-    $('out').innerHTML=buildHtml();
-    $('ovTable').innerHTML='<tr>'+HEAD.map(function(h){return '<th>'+esc(h)+'</th>'}).join('')+'</tr><tr>'+ovRow(true).map(function(c){return '<td>'+c+'</td>'}).join('')+'</tr>';
   }
 
   // ---------- formulär <-> data ----------
@@ -178,6 +131,7 @@
   }
   function setForm(c){
     FIELDS.forEach(function(k){set(k,c[k])});
+    initTouched=!!c.initialer&&c.initialer!==autoInit(c.ansvarig);
     $('qsync').checked=!!c.qsync;
     document.querySelectorAll('#motiv input').forEach(function(x){x.checked=(c.motiv||[]).indexOf(x.value)>=0});
     orig=c;fillProcSel(c.procId||'');
@@ -194,7 +148,8 @@
     document.querySelectorAll('#motiv input').forEach(function(c){c.checked=false});
     OV.forEach(function(k){$(k).dataset.touched='0';set(k,'')});
     curImages=[];sessionUploads={};renderImages();
-    set('ansvarig',prefs.ansvarig);set('initialer',prefs.initialer);
+    set('ansvarig',prefs.ansvarig);set('initialer',prefs.initialer||autoInit(prefs.ansvarig));
+    initTouched=!!prefs.initialer&&prefs.initialer!==autoInit(prefs.ansvarig);
     applyProc();
     setEditing(null);
   }
@@ -209,14 +164,14 @@
     var c=null;changes.forEach(function(x){if(x._id===id)c=x});if(!c)return;
     setForm(Object.assign({},c));setEditing(id);show('ny');
   }
-  function renderHist(items,target){
+  function renderHist(items,target,noun){
     var box=$(target||'hist');
     items=(items||[]).slice().reverse();
     if(!items.length){box.innerHTML='<li class="hint">Ingen historik ännu.</li>';return}
     box.innerHTML=items.slice(0,80).map(function(h){
       var who=(h.by&&h.by!=='system')?h.by:(h.note||'Okänd användare');
       var when=h.at?new Date(h.at).toLocaleString('sv-SE'):'';
-      var body=h.kind==='import'?'<p class="chg">Importerades från OneNote.</p>':h.kind==='create'?'<p class="chg">Ändringen skapades.</p>':(h.changes||[]).map(function(c){
+      var body=h.kind==='import'?'<p class="chg">Importerades från OneNote.</p>':h.kind==='create'?'<p class="chg">'+(noun||'Ändringen')+' skapades.</p>':(h.changes||[]).map(function(c){
         return '<p class="chg"><b>'+esc(LABEL[c.f]||c.f)+':</b> <i>'+esc(c.from||'(tomt)')+'</i> → '+esc(c.to||'(tomt)')+'</p>'}).join('');
       return '<li><div><b>'+esc(who)+'</b> <span class="when">'+esc(when)+'</span></div>'+body+'</li>';
     }).join('');
@@ -293,13 +248,11 @@
 
   // ---------- lista / uppföljning ----------
   function isOpen(c){return OPEN_STATUS.indexOf(c.status||'')>=0}
-  function testMissing(c){return (c.saf==='Ja'||c.kval==='Ja')&&!String(c.resultat||'').trim()&&isOpen(c)}
   function qMissing(c){return c.kval==='Ja'&&!c.qsync&&isOpen(c)}
   var CHIPS=[
     {k:'alla',t:'Alla',f:function(){return true}},
     {k:'oppna',t:'Öppna',f:isOpen},
     {k:'vantar',t:'Väntar på godkännande',f:function(c){return c.status==='Väntar på godkännande'}},
-    {k:'test',t:'Test saknas',f:testMissing},
     {k:'q',t:'Q ej synkad',f:qMissing},
     {k:'risk',t:'Säkerhet/kvalité',f:function(c){return c.saf==='Ja'||c.kval==='Ja'}}
   ];
@@ -345,7 +298,6 @@
         var fl=[];
         if(c.saf==='Ja')fl.push('<span class="pill warn">Säkerhet</span>');
         if(c.kval==='Ja')fl.push('<span class="pill warn">Kvalité</span>');
-        if(testMissing(c))fl.push('<span class="pill bad">Test saknas</span>');
         if(qMissing(c))fl.push('<span class="pill bad">Q ej synkad</span>');
         return '<tr data-open="'+esc(c._id)+'"><td><button type="button" class="idbtn" data-open="'+esc(c._id)+'">'+esc(c._id)+'</button></td><td>'+esc(c.datum)+'</td><td>'+esc(c.initialer)+'</td><td>'+esc(c.procName)+'</td><td>'+esc(c.maskin)+'</td><td>'+esc(c.fabrik)+'</td><td class="w">'+esc(c.ov_block||'')+'</td><td class="w">'+esc(c.ov_besk||short(c.beskrivning,90))+'</td><td class="w">'+esc(c.ov_orsak||short(c.orsak,70))+'</td><td>'+pill(c.status)+'</td><td><div class="flags">'+fl.join('')+'</div></td></tr>';
       }).join('')+'</tbody>';
@@ -366,11 +318,10 @@
     $('dStatus').innerHTML=pill(c.status);
     $('dEdit').disabled=!canWrite||!db;
     var w=[];
-    if(testMissing(c))w.push('Ändringen påverkar säkerhet eller kvalité men resultat från test saknas.');
     if(qMissing(c))w.push('Kvalitépåverkan är markerad men ändringen är inte synkad med Q.');
     var dw=$('dWarn');dw.hidden=!w.length;dw.innerHTML=w.map(function(t){return '<p>'+esc(t)+'</p>'}).join('');
     var ans=c.ansvarig?(c.ansvarig+(c.initialer?' ('+c.initialer+')':'')):(c.initialer||'');
-    var motiv=(c.motiv||[]).slice();if(c.annat)motiv.push('Annat: '+c.annat);
+    var motiv=(c.motiv||[]).slice();if(c.annat)motiv.push('Övrigt: '+c.annat);
     var saf=c.saf?(c.saf+(c.saf_txt?' - '+c.saf_txt:'')):'';
     var kv_=c.kval?(c.kval+(c.kval_txt?' - '+c.kval_txt:'')+(c.kval==='Ja'?' (Synkad med Q: '+(c.qsync?'ja':'nej')+')':'')):'';
     $('detail').innerHTML=
@@ -378,9 +329,8 @@
       dsec('2','Påverkade komponenter',kv([['Programblock',c.progblock],['Datablocker',c.datablock],['HMI-sidor eller taggar',c.hmi],['Säkerhetslogik (F-PLC)',c.fplc],['Kommunikationsmoduler / nätverk',c.komm],['Övrigt',c.ovrigt]]))+
       dsec('3','Beskrivning och anledning',kv([['Beskrivning',c.beskrivning],['Orsak',c.orsak],['Motivering',motiv.join(', ')]])+(c.images&&c.images.length?'<div class="gallery">'+galleryHtml(c.images,false)+'</div>':''))+
       dsec('4','Risk- och konsekvensanalys',kv([['Säkerhetspåverkan',saf],['Kvalitépåverkan',kv_]]))+
-      dsec('5','Testning och validering',kv([['Simulering genomförd',c.sim],['Maskintest genomförd',c.mtest],['Teststeg',c.teststeg],['Resultat',c.resultat]]))+
-      dsec('6','Backup-referenser',kv([['Backup före ändring',bakText(c.bak_fore)],['Backup efter ändring',bakText(c.bak_efter)]]))+
-      dsec('7','Godkännande',kv([['Verifierad av',c.verifierad],['Status',pill(c.status),true],['Kommentarer',c.kommentar]]))+
+      dsec('5','Backup-referenser',kv([['Backup efter ändring',bakText(c.bak_efter)]]))+
+      dsec('6','Godkännande',kv([['Verifierad av',c.verifierad],['Status',pill(c.status),true],['Kommentarer',c.kommentar]]))+
       dsec('Ö','Översiktsrad',kv([['Påverkat program/block',c.ov_block],['Beskrivning',c.ov_besk],['Orsak',c.ov_orsak],['Kommentar',c.ov_komm],['Godkännande',c.ov_godk]]));
     var when=function(t){return t?new Date(t).toLocaleString('sv-SE'):''};
     var t=(c.imported?'Importerad':'Skapad')+' '+when(c.createdAt)+(c.createdBy&&c.createdBy!=='anon'?' av '+c.createdBy:'');
@@ -396,9 +346,9 @@
   }
   function csvCell(v){v=String(v==null?'':v).replace(/\r?\n/g,' ');return '"'+v.replace(/"/g,'""')+'"'}
   async function exportCsv(){
-    var head=['ID','Datum','Ansvarig','Initialer','Process','Fabrik','Maskin','PLC','Programblock','Datablocker','HMI','F-PLC','Kommunikation','Övrigt','Beskrivning','Orsak','Säkerhetspåverkan','Kvalitépåverkan','Synkad med Q','Simulering','Maskintest','Teststeg','Resultat','Backup före','Backup efter','Verifierad av','Status','Kommentar'];
+    var head=['ID','Datum','Ansvarig','Initialer','Process','Fabrik','Maskin','PLC','Programblock','Datablocker','HMI','F-PLC','Kommunikation','Övrigt','Beskrivning','Orsak','Säkerhetspåverkan','Kvalitépåverkan','Synkad med Q','Backup efter','Verifierad av','Status','Kommentar'];
     var rows=filtered().map(function(c){
-      return [c._id,c.datum,c.ansvarig,c.initialer,c.procName,c.fabrik,c.maskin,c.plc,c.progblock,c.datablock,c.hmi,c.fplc,c.komm,c.ovrigt,c.beskrivning,c.orsak,c.saf,c.kval,c.qsync?'Ja':'',c.sim,c.mtest,c.teststeg,c.resultat,bakText(c.bak_fore),bakText(c.bak_efter),c.verifierad,c.status,c.kommentar].map(csvCell).join(';');
+      return [c._id,c.datum,c.ansvarig,c.initialer,c.procName,c.fabrik,c.maskin,c.plc,c.progblock,c.datablock,c.hmi,c.fplc,c.komm,c.ovrigt,c.beskrivning,c.orsak,c.saf,c.kval,c.qsync?'Ja':'',bakText(c.bak_efter),c.verifierad,c.status,c.kommentar].map(csvCell).join(';');
     });
     var csv='﻿'+head.map(csvCell).join(';')+'\r\n'+rows.join('\r\n');
     var blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
@@ -412,18 +362,18 @@
     var t=$('procTbl');
     if(!loaded.procs){t.innerHTML='<tr><td class="empty">Laddar …</td></tr>'}
     else if(!procs.length){t.innerHTML='<tr><td class="empty">Inga processer ännu. Lägg till processer längre ned på sidan.</td></tr>'}
-    else t.innerHTML='<thead><tr><th>Process</th><th>Fabrik</th><th>Maskin</th><th>PLC‑plattform</th><th>Verifierad av</th></tr></thead><tbody>'+
-      procs.map(function(p){return '<tr><td><button type="button" class="idbtn" data-proc="'+esc(p._id)+'" style="font-family:inherit">'+esc(p.name)+'</button></td><td>'+esc(p.fabrik)+'</td><td>'+esc(p.maskin)+'</td><td>'+esc(p.plc)+'</td><td>'+esc(p.verifierad)+'</td></tr>'}).join('')+'</tbody>';
+    else t.innerHTML='<thead><tr><th>Process</th><th>Fabrik</th><th>Maskin</th><th>PLC‑plattform</th></tr></thead><tbody>'+
+      procs.map(function(p){return '<tr><td><button type="button" class="idbtn" data-proc="'+esc(p._id)+'" style="font-family:inherit">'+esc(p.name)+'</button></td><td>'+esc(p.fabrik)+'</td><td>'+esc(p.maskin)+'</td><td>'+esc(p.plc)+'</td></tr>'}).join('')+'</tbody>';
   }
   function editProc(p){
     editingProc=p?p._id:null;
     $('pEditTitle').textContent=p?('Redigera process: '+p.name):'Ny process';
-    ['name','fabrik','maskin','plc','verifierad'].forEach(function(k){set('p_'+k,p?p[k]:'')});
+    ['name','fabrik','maskin','plc'].forEach(function(k){set('p_'+k,p?p[k]:'')});
     $('delProc').hidden=!p;confirmDel=false;$('delProc').textContent='Ta bort process';
   }
   async function saveProc(){
     if(!db||!canWrite)return;
-    var d={name:val('p_name').trim(),fabrik:val('p_fabrik'),maskin:val('p_maskin').trim(),plc:val('p_plc').trim(),verifierad:val('p_verifierad').trim()};
+    var d={name:val('p_name').trim(),fabrik:val('p_fabrik'),maskin:val('p_maskin').trim(),plc:val('p_plc').trim()};
     if(!d.name){msg('procMsg','Ange ett namn på processen.');return}
     try{
       if(editingProc){var p=procById(editingProc);d.order=p?p.order:999;await db.doc('processes/'+editingProc).set(d)}
@@ -501,7 +451,7 @@
       var ovT=['ov_block','ov_besk','ov_orsak','ov_komm','ov_verif','ov_godk'];
       var rec={id:id,datum:normDate(g('datum')),ansvarig:'',initialer:g('init'),fabrik:fabrikV,maskin:p?p.maskin||'':'',plc:p?p.plc||'':'',
         progblock:block,datablock:'',hmi:'',fplc:'',komm:'',ovrigt:'',beskrivning:besk,orsak:orsak,annat:'',saf:'Ej bedömd',kval:'Ej bedömd',saf_txt:'',kval_txt:'',
-        sim:'',mtest:'',teststeg:'',resultat:'',bak_fore:g('vf'),bak_efter:g('ve'),verifierad:g('verif'),status:g('godk')?'Godkänd':defStat,kommentar:g('komm'),
+        bak_fore:g('vf'),bak_efter:g('ve'),verifierad:g('verif'),status:g('godk')?'Godkänd':defStat,kommentar:g('komm'),
         qsync:false,motiv:[],procId:p?p._id:'',procName:p?p.name:pn,
         ov_block:block,ov_besk:besk,ov_orsak:orsak,ov_komm:g('komm'),ov_verif:g('verif'),ov_godk:g('godk'),ovTouched:ovT,
         imported:true,importedAt:now,createdAt:now,createdBy:meName(),updatedAt:now,updatedBy:meName()};
@@ -595,24 +545,25 @@
     var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
     return await new Promise(function(r){c.toBlob(function(b){r(b||file)},'image/jpeg',0.85)});
   }
-  async function addImages(files){
+  async function addImagesTo(files,arr,done,msgId,session){
     if(!canWrite||!db)return;
     files=[].slice.call(files||[]).filter(function(f){return /^image\//.test(f.type)});
-    if(!files.length){msg('img_msg','Välj bildfiler (png, jpg, gif eller webp).');return}
+    if(!files.length){msg(msgId,'Välj bildfiler (png, jpg, gif eller webp).');return}
     for(var i=0;i<files.length;i++){
       var f=files[i];
-      msg('img_msg','Sparar bild '+(i+1)+' av '+files.length+' …',true);
+      msg(msgId,'Sparar bild '+(i+1)+' av '+files.length+' …',true);
       try{
         var blob=await shrink(f),name=AL.rid()+(IMG_EXT[blob.type]||'.png');
         await db.putFile('images',name,blob);
-        curImages.push({id:name,name:f.name||'Skärmdump',size:blob.size});
-        sessionUploads[name]=1;renderImages();
+        arr.push({id:name,name:f.name||'Skärmdump',size:blob.size});
+        session[name]=1;done();
       }catch(e){
-        msg('img_msg','Det gick inte att spara bilden. Kontrollera att du har skrivrättighet till mappen.',true);return;
+        msg(msgId,'Det gick inte att spara bilden. Kontrollera att du har skrivrättighet till mappen.',true);return;
       }
     }
-    msg('img_msg',files.length+' bild'+(files.length>1?'er':'')+' tillagd'+(files.length>1?'a':'')+'. Spara ändringen för att behålla dem.');
+    msg(msgId,files.length+' bild'+(files.length>1?'er':'')+' tillagd'+(files.length>1?'a':'')+'. Spara för att behålla dem.');
   }
+  function addImages(files){return addImagesTo(files,curImages,renderImages,'img_msg',sessionUploads)}
   $('imgFile').addEventListener('change',function(){addImages($('imgFile').files);$('imgFile').value=''});
   $('imgDrop').addEventListener('click',function(){$('imgDrop').focus()});
   $('imgDrop').addEventListener('paste',function(e){
@@ -753,29 +704,368 @@
   };
 
   // ---------- vyer ----------
-  var VIEWS=['setup','andringar','visa','ny','processer','import','tech'];
+  // ---------- Felsökning ----------
+  var FF_DEFAULT=[
+    {id:'id',label:'Felsöknings-ID',type:'auto',on:true,list:true,fixed:true},
+    {id:'datum',label:'Datum',type:'date',on:true,list:true},
+    {id:'ansvarig',label:'Ansvarig',type:'text',on:true,list:true},
+    {id:'process',label:'Process',type:'process',on:true,list:true},
+    {id:'maskin',label:'Maskin',type:'text',on:true,list:true},
+    {id:'fabrik',label:'Fabrik',type:'text',on:true,list:false},
+    {id:'symtom',label:'Felbeskrivning (symptom)',type:'long',on:true,list:true},
+    {id:'felkod',label:'Larm- eller felkod',type:'text',on:true,list:false},
+    {id:'orsak',label:'Orsak',type:'long',on:true,list:true},
+    {id:'atgard',label:'Åtgärd',type:'long',on:true,list:true},
+    {id:'stillestand',label:'Stillestånd (minuter)',type:'number',on:false,list:false},
+    {id:'andring',label:'Kopplad ändring (ID)',type:'text',on:true,list:false},
+    {id:'status',label:'Status',type:'select',opts:['Öppen','Under utredning','Åtgärdad','Stängd'],on:true,list:true},
+    {id:'prioritet',label:'Prioritet',type:'select',opts:['Låg','Normal','Hög'],on:false,list:false},
+    {id:'utrustning',label:'Utrustning (givare, ventil, motor …)',type:'text',on:false,list:false},
+    {id:'bilder',label:'Bilder',type:'images',on:true,list:false},
+    {id:'kommentar',label:'Kommentarer',type:'long',on:true,list:false}
+  ];
+  var FF_TYPES={text:'Text',long:'Lång text',date:'Datum',number:'Tal',select:'Val',auto:'Automatiskt',process:'Process (rullista)',images:'Bilder'};
+  var FF=clone(FF_DEFAULT);
+  var fsFormStale=false,fsRecs=[],fsLoaded=false,fsViewing=null,fsEdit=null,fsOrig=null,fsImages=[],fsSession={},fsChip='alla',ffTimer=null;
+  function ffOn(){return FF.filter(function(f){return f.on})}
+  function ffById(id){return FF.filter(function(f){return f.id===id})[0]}
+  function fsNum(r){return parseInt(String(r._id).replace(/\D/g,''),10)||0}
+  function fsValue(r,f){
+    if(f.type==='process')return r.procName||'';
+    if(f.type==='images')return (r.images&&r.images.length)?r.images.length+' st':'';
+    if(f.type==='auto')return r._id||r.id||'';
+    return r[f.id]==null?'':String(r[f.id]);
+  }
+  function fsCell(r,f){var v=fsValue(r,f);return f.id==='ansvarig'&&v?(autoInit(v)||v):v}
+  function fsPill(v){
+    var cls=/stängd|åtgärdad/i.test(v)?'ok':/öppen/i.test(v)?'bad':v?'warn':'';
+    return '<span class="pill '+cls+'">'+esc(v||'Ej angiven')+'</span>';
+  }
+
+  // formulär
+  function fsFieldHtml(f){
+    var id='fx_'+f.id,l=esc(f.label);
+    if(f.type==='auto')return '<label>'+l+'<input type="text" id="'+id+'" readonly placeholder="Tilldelas när du sparar"></label>';
+    if(f.type==='date')return '<label>'+l+'<input type="date" id="'+id+'"></label>';
+    if(f.type==='number')return '<label>'+l+'<input type="number" id="'+id+'"></label>';
+    if(f.type==='select')return '<label>'+l+'<select id="'+id+'"><option value=""></option>'+(f.opts||[]).map(function(o){return '<option>'+esc(o)+'</option>'}).join('')+'</select></label>';
+    if(f.type==='process')return '<label>'+l+'<select id="'+id+'"><option value="">Välj process …</option>'+procs.map(function(p){return '<option value="'+esc(p._id)+'">'+esc(p.name)+'</option>'}).join('')+'</select></label>';
+    if(f.type==='images')return '<div class="stack" style="grid-column:1/-1"><h2>'+l+'</h2><div class="row"><label class="chk" id="fsImgPick"><input type="file" id="fsImgFile" accept="image/*" multiple hidden> Välj bilder</label><div class="drop" id="fsImgDrop" tabindex="0" role="button" aria-label="Klistra in eller släpp skärmdump här">Klicka här och klistra in en skärmdump (Ctrl+V), eller släpp bilder här</div></div><div class="gallery" id="fsImgList"></div><span class="status" id="fsImg_msg" role="status"></span></div>';
+    if(f.type==='long')return '<label style="grid-column:1/-1">'+l+'<textarea id="'+id+'"></textarea></label>';
+    return '<label>'+l+'<input type="text" id="'+id+'"></label>';
+  }
+  function fsRenderImages(){
+    var el=$('fsImgList');if(!el)return;
+    el.innerHTML=galleryHtml(fsImages,canWrite&&db);hydrateImages(el);
+  }
+  function fsBuildForm(rec){
+    var on=ffOn();
+    $('fForm').innerHTML=on.map(fsFieldHtml).join('');
+    on.forEach(function(f){
+      var el=$('fx_'+f.id);if(!el)return;
+      if(f.type==='process')el.value=rec.procId||'';
+      else if(f.type==='auto')el.value=rec._id||'';
+      else el.value=rec[f.id]==null?'':rec[f.id];
+    });
+    fsImages=(rec.images||[]).slice();fsSession={};fsRenderImages();
+    var ps=$('fx_process');
+    if(ps)ps.onchange=function(){
+      var p=procById(ps.value);if(!p)return;
+      ['fabrik','maskin'].forEach(function(k){var el=$('fx_'+k);if(el&&p[k])el.value=p[k]});
+    };
+    if($('fsImgFile')){
+      $('fsImgFile').addEventListener('change',function(){addImagesTo($('fsImgFile').files,fsImages,fsRenderImages,'fsImg_msg',fsSession);$('fsImgFile').value=''});
+      var dz=$('fsImgDrop');
+      dz.addEventListener('click',function(){dz.focus()});
+      dz.addEventListener('paste',function(e){var fs=[].slice.call((e.clipboardData&&e.clipboardData.files)||[]);if(fs.length){e.preventDefault();addImagesTo(fs,fsImages,fsRenderImages,'fsImg_msg',fsSession)}});
+      dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over')});
+      dz.addEventListener('dragleave',function(){dz.classList.remove('over')});
+      dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');addImagesTo(e.dataTransfer&&e.dataTransfer.files,fsImages,fsRenderImages,'fsImg_msg',fsSession)});
+      $('fsImgList').addEventListener('click',async function(e){
+        var b=e.target.closest('[data-imgdel]');if(!b)return;var id=b.dataset.imgdel;
+        fsImages=fsImages.filter(function(x){return x.id!==id});
+        if(fsSession[id]){try{await db.removeFile('images',id)}catch(err){}delete fsSession[id]}
+        fsRenderImages();
+      });
+    }
+  }
+  function fsSetTitle(id){
+    $('fFormTitle').textContent=id?('Felsökning '+id):'Ny felsökning';
+    $('fFormMsg').hidden=true;
+    if(id)renderHist((fsOrig&&fsOrig.history)||[],'fHistForm','Felsökningen');
+    else $('fHistForm').innerHTML='<li class="hint">Historiken visas när felsökningen är sparad.</li>';
+  }
+  function fsNew(){
+    fsEdit=null;fsOrig=null;
+    var rec={datum:today(),ansvarig:me.name||prefs.ansvarig||''};
+    var st=ffById('status');if(st&&st.opts&&st.opts.length)rec.status=st.opts[0];
+    fsBuildForm(rec);fsSetTitle(null);
+  }
+  function fsRefreshForm(){
+    if(!fsFormStale)return;fsFormStale=false;
+    if(fsEdit&&fsOrig){fsBuildForm(fsOrig);fsSetTitle(fsEdit)}else fsNew();
+  }
+  function fsOpen(id){
+    var r=fsRecs.filter(function(x){return x._id===id})[0];if(!r)return;
+    fsEdit=id;fsOrig=Object.assign({},r);
+    fsBuildForm(fsOrig);fsSetTitle(id);show('fny');
+  }
+  function fsCollect(){
+    var d={};
+    ffOn().forEach(function(f){
+      var el=$('fx_'+f.id);if(!el||f.type==='auto'||f.type==='images')return;
+      if(f.type==='process'){d.procId=el.value;var p=procById(el.value);d.procName=p?p.name:'';return}
+      d[f.id]=el.value.trim();
+    });
+    d.images=fsImages.slice();
+    return d;
+  }
+  function fsDiff(a,b){
+    var out=[];
+    ffOn().forEach(function(f){
+      if(f.type==='auto')return;
+      if(f.type==='images'){
+        var x=(a.images||[]).map(function(i){return i.id}).join(','),y=(b.images||[]).map(function(i){return i.id}).join(',');
+        if(x!==y)out.push({f:f.label,from:(a.images||[]).length+' st',to:(b.images||[]).length+' st'});return;
+      }
+      var p=fsValue(a,f),q=fsValue(b,f);
+      if(p!==q)out.push({f:f.label,from:p.slice(0,300),to:q.slice(0,300)});
+    });
+    return out;
+  }
+  async function fsClaimId(data){
+    var col=db.collection('felsokning');await col.poll();
+    var maxN=0;
+    Object.keys(col.cache).forEach(function(k){var m=k.match(/^F(\d+)/),n=m?parseInt(m[1],10):0;if(n>maxN)maxN=n});
+    for(var n=maxN+1;n<maxN+40;n++){
+      var key='F'+pad3(n),ref=db.doc('felsokning/'+key);
+      if(await ref.exists())continue;
+      data.id=key;
+      data.history=[{at:data.createdAt,by:meName(),kind:'create',changes:[]}];
+      await ref.set(data);
+      await sleep(700);
+      var chk=await ref.get();
+      if(chk.exists&&chk.data().createdAt===data.createdAt&&chk.data().createdBy===data.createdBy)return key;
+    }
+    throw new Error('Kunde inte tilldela ett ID. Försök igen.');
+  }
+  async function fsSave(){
+    if(!db||!canWrite)return;
+    var fm=$('fFormMsg');fm.hidden=true;
+    var d=fsCollect();
+    var pf=ffById('process');
+    if(pf&&pf.on&&!d.procId){msg('fSaveMsg','Välj en process först.');return}
+    var fl=ffOn().filter(function(f){return f.type==='long'})[0];
+    if(fl&&!d[fl.id]){msg('fSaveMsg','Fyll i '+fl.label.toLowerCase()+' först.');return}
+    $('fSave').disabled=true;msg('fSaveMsg','Sparar …',true);
+    var now=new Date().toISOString();
+    try{
+      if(fsEdit){
+        var ref=db.doc('felsokning/'+fsEdit),cur=await ref.get(),cd=cur.exists?cur.data():null;
+        if(cd&&fsOrig&&cd.updatedAt!==fsOrig.updatedAt){
+          fm.hidden=false;
+          fm.innerHTML='<p>Någon annan har sparat felsökningen sedan du öppnade den. Dina ändringar är inte sparade.</p><div class="row"><button type="button" id="fReload">Ladda senaste versionen (dina ändringar går förlorade)</button></div>';
+          $('fReload').onclick=function(){fsOpen(fsEdit)};
+          msg('fSaveMsg','');return;
+        }
+        var base=Object.assign({},cd||fsOrig);delete base._id;
+        var full=Object.assign(base,d,{id:fsEdit,updatedAt:now,updatedBy:meName()});
+        var ch=fsDiff(fsOrig||{},d);
+        full.history=((cd&&cd.history)||(fsOrig&&fsOrig.history)||[]).slice();
+        if(ch.length)full.history.push({at:now,by:meName(),kind:'update',changes:ch});
+        await ref.set(full);
+        fsOrig=Object.assign({_id:fsEdit},full);renderHist(full.history,'fHistForm','Felsökningen');
+        msg('fSaveMsg','Sparad.');
+      }else{
+        var data=Object.assign({},d,{createdAt:now,createdBy:meName(),updatedAt:now,updatedBy:meName()});
+        var key=await fsClaimId(data);
+        fsOrig=Object.assign({_id:key},data);fsEdit=key;
+        var idEl=$('fx_id');if(idEl)idEl.value=key;
+        fsSetTitle(key);
+        msg('fSaveMsg','Sparad som felsökning '+key+'.');
+      }
+    }catch(e){
+      msg('fSaveMsg','Det gick inte att spara'+(e&&e.message?': '+e.message:'')+'. Försök igen.',true);
+    }finally{$('fSave').disabled=!canWrite}
+  }
+
+  // lista
+  function fsChips(){
+    var st=ffById('status'),list=[{k:'alla',t:'Alla',f:function(){return true}}];
+    if(st&&st.on)(st.opts||[]).forEach(function(o){list.push({k:'s:'+o,t:o,f:function(r){return r.status===o}})});
+    return list;
+  }
+  function fsFiltered(){
+    var q=val('ff_q').trim().toLowerCase(),fa=val('ff_fabrik'),fp=val('ff_proc'),fn=val('ff_ans'),fs=val('ff_status');
+    var ch=fsChips().filter(function(x){return x.k===fsChip})[0]||fsChips()[0];
+    return fsRecs.filter(function(r){
+      if(!ch.f(r))return false;
+      if(fa&&r.fabrik!==fa)return false;
+      if(fp&&r.procName!==fp)return false;
+      if(fn&&autoInit(r.ansvarig)!==fn)return false;
+      if(fs&&r.status!==fs)return false;
+      if(q){
+        var hay=[r._id].concat(ffOn().map(function(f){return fsValue(r,f)})).join(' ').toLowerCase();
+        if(hay.indexOf(q)<0)return false;
+      }
+      return true;
+    }).sort(function(a,b){return fsNum(b)-fsNum(a)});
+  }
+  function fsRenderList(){
+    var chips=fsChips();
+    $('fchips').innerHTML=chips.map(function(x){
+      return '<button type="button" class="chip" data-fchip="'+esc(x.k)+'" aria-pressed="'+(fsChip===x.k)+'"><b>'+fsRecs.filter(x.f).length+'</b><span>'+esc(x.t)+'</span></button>';
+    }).join('');
+    var fp=$('ff_proc'),pv=fp.value;
+    fp.innerHTML='<option value="">Alla</option>'+procs.map(function(p){return '<option>'+esc(p.name)+'</option>'}).join('');fp.value=pv;
+    var fa=$('ff_ans'),av=fa.value,seen={};
+    fsRecs.forEach(function(r){var i=autoInit(r.ansvarig);if(i)seen[i]=1});
+    fa.innerHTML='<option value="">Alla</option>'+Object.keys(seen).sort().map(function(k){return '<option>'+esc(k)+'</option>'}).join('');fa.value=av;
+    var fs=$('ff_status'),sv_=fs.value,st=ffById('status');
+    fs.innerHTML='<option value="">Alla</option>'+((st&&st.opts)||[]).map(function(o){return '<option>'+esc(o)+'</option>'}).join('');fs.value=sv_;
+    var rows=fsFiltered(),t=$('ftbl');
+    $('flistCount').textContent=fsRecs.length?(rows.length+' av '+fsRecs.length+' felsökningar'):'';
+    if(!fsLoaded){t.innerHTML='<tr><td class="empty">Laddar felsökningar …</td></tr>';return}
+    if(!fsRecs.length){t.innerHTML='<tr><td class="empty">Inga felsökningar ännu. Tryck Ny felsökning för att skriva den första.</td></tr>';return}
+    if(!rows.length){t.innerHTML='<tr><td class="empty">Inga felsökningar matchar filtren.</td></tr>';return}
+    var cols=ffOn().filter(function(f){return f.list});
+    t.innerHTML='<thead><tr>'+cols.map(function(f){return '<th>'+esc(f.id==='ansvarig'?'Ans.':f.label)+'</th>'}).join('')+'</tr></thead><tbody>'+
+      rows.map(function(r){
+        return '<tr data-fopen="'+esc(r._id)+'">'+cols.map(function(f){
+          if(f.type==='auto')return '<td class="nw"><button type="button" class="idbtn" data-fopen="'+esc(r._id)+'">'+esc(r._id)+'</button></td>';
+          if(f.id==='status')return '<td>'+fsPill(r.status)+'</td>';
+          var v=fsCell(r,f);
+          return '<td class="'+(f.type==='long'?'w':(f.type==='date'||f.id==='fabrik'||f.id==='ansvarig')?'nw':'')+'">'+esc(f.type==='long'?short(v,120):v)+'</td>';
+        }).join('')+'</tr>';
+      }).join('')+'</tbody>';
+  }
+  function fsExport(){
+    var cols=ffOn().filter(function(f){return f.type!=='images'||true});
+    var head=cols.map(function(f){return f.label}),rows=fsFiltered().map(function(r){return cols.map(function(f){return fsValue(r,f)}).map(csvCell).join(';')});
+    var csv='﻿'+head.map(csvCell).join(';')+'\r\n'+rows.join('\r\n');
+    var blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download='felsokningar-'+today()+'.csv';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href)},3000);
+    msg('flistMsg','Filen hämtades till din hämtningsmapp.');
+  }
+
+  // visa
+  function fsRenderDetail(){
+    var r=fsRecs.filter(function(x){return x._id===fsViewing})[0];
+    if(!r){$('fdetail').innerHTML='<section class="card"><p class="empty">Felsökningen hittades inte.</p></section>';$('fTitle').textContent='Felsökning';$('fStatus').innerHTML='';$('fMeta').textContent='';return}
+    $('fTitle').textContent='Felsökning '+r._id;
+    $('fStatus').innerHTML=r.status?fsPill(r.status):'';
+    $('fEditBtn').disabled=!canWrite||!db;
+    var rows=[];
+    ffOn().forEach(function(f){if(f.type==='images')return;rows.push([f.label,fsValue(r,f)])});
+    var gal=(r.images&&r.images.length)?'<div class="gallery">'+galleryHtml(r.images,false)+'</div>':'';
+    $('fdetail').innerHTML='<section class="card"><h2>Uppgifter</h2>'+kv(rows)+gal+'</section>';
+    var when=function(t){return t?new Date(t).toLocaleString('sv-SE'):''};
+    var t=(r.imported?'Importerad':'Skapad')+' '+when(r.createdAt)+(r.createdBy?' av '+r.createdBy:'');
+    if(r.updatedAt&&r.updatedAt!==r.createdAt)t+='. Senast ändrad '+when(r.updatedAt)+(r.updatedBy?' av '+r.updatedBy:'');
+    $('fMeta').textContent=t+'.';
+    renderHist(r.history,'fhist','Felsökningen');
+    hydrateImages($('fdetail'));
+  }
+  function fsShowDetail(id){fsViewing=id;fsRenderDetail();show('fvisa')}
+
+  // fältredigerare (Inställningar)
+  function ffRender(){
+    var h='<div class="frow fhead"><span>Med</span><span>Namn</span><span>Typ</span><span>I listan</span><span>Ordning</span></div>';
+    h+=FF.map(function(f,i){
+      return '<div class="frow" data-f="'+esc(f.id)+'"><input type="checkbox" data-on aria-label="Ta med '+esc(f.label)+'"'+(f.on?' checked':'')+(f.fixed?' disabled':'')+'>'+
+        '<input type="text" data-label value="'+esc(f.label)+'" aria-label="Namn">'+
+        '<span class="hint">'+esc(FF_TYPES[f.type]||f.type)+(f.opts?': '+esc(f.opts.join(', ')):'')+'</span>'+
+        '<label class="chk"><input type="checkbox" data-list'+(f.list?' checked':'')+(f.on?'':' disabled')+'> Kolumn</label>'+
+        '<span class="row" style="gap:4px"><button type="button" class="small" data-up aria-label="Flytta upp"'+(i===0?' disabled':'')+'>▲</button><button type="button" class="small" data-down aria-label="Flytta ned"'+(i===FF.length-1?' disabled':'')+'>▼</button>'+
+        (f.custom?'<button type="button" class="small danger" data-del>Ta bort</button>':'')+'</span></div>';
+    }).join('');
+    $('ffields').innerHTML=h;
+  }
+  function ffSave(){
+    clearTimeout(ffTimer);
+    ffTimer=setTimeout(async function(){
+      if(!db||!canWrite)return;
+      try{await db.doc('settings/felsokning').set({fields:clone(FF)})}catch(e){msg('procMsg','Det gick inte att spara fälten.')}
+    },500);
+  }
+  function ffChanged(rebuildForm){
+    ffRender();fsRenderList();ffSave();
+    fsFormStale=true;
+  }
+  $('ffields').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;var row=b.closest('[data-f]');if(!row)return;
+    var i=FF.indexOf(ffById(row.dataset.f));
+    if(b.hasAttribute('data-up')&&i>0){var t=FF[i];FF[i]=FF[i-1];FF[i-1]=t;ffChanged()}
+    if(b.hasAttribute('data-down')&&i<FF.length-1){var u=FF[i];FF[i]=FF[i+1];FF[i+1]=u;ffChanged()}
+    if(b.hasAttribute('data-del')){FF.splice(i,1);ffChanged()}
+  });
+  $('ffields').addEventListener('change',function(e){
+    var row=e.target.closest('[data-f]');if(!row)return;var f=ffById(row.dataset.f);
+    if(e.target.hasAttribute('data-on')){f.on=e.target.checked;ffChanged()}
+    if(e.target.hasAttribute('data-list')){f.list=e.target.checked;ffChanged()}
+  });
+  $('ffields').addEventListener('input',function(e){
+    if(!e.target.hasAttribute('data-label'))return;
+    ffById(e.target.closest('[data-f]').dataset.f).label=e.target.value;ffSave();
+  });
+  $('nf_add').onclick=function(){
+    var name=val('nf_name').trim();if(!name)return;
+    var type=val('nf_type'),f={id:'x'+Date.now().toString(36),label:name,type:type,on:true,list:false,custom:true};
+    if(type==='select')f.opts=val('nf_opts').split(',').map(function(x){return x.trim()}).filter(Boolean);
+    FF.push(f);set('nf_name','');set('nf_opts','');ffChanged();
+  };
+  $('nf_reset').onclick=function(){FF=clone(FF_DEFAULT);ffChanged()};
+
+  $('fGoNew').onclick=function(){fsNew();show('fny')};
+  $('fNewBtn').onclick=function(){fsNew()};
+  $('fCancel').onclick=function(){show('flog')};
+  $('fSave').onclick=fsSave;
+  $('fExport').onclick=fsExport;
+  $('fBack').onclick=function(){show('flog')};
+  $('fEditBtn').onclick=function(){if(fsViewing)fsOpen(fsViewing)};
+  $('fchips').onclick=function(e){var b=e.target.closest('[data-fchip]');if(b){fsChip=b.dataset.fchip;fsRenderList()}};
+  $('ftbl').onclick=function(e){var b=e.target.closest('[data-fopen]');if(b)fsShowDetail(b.dataset.fopen)};
+  ['ff_q','ff_fabrik','ff_proc','ff_ans','ff_status'].forEach(function(id){$(id).addEventListener('input',fsRenderList)});
+
+  var MENU=[
+    {id:'a',label:'Ändringar',items:[['andringar','Ändringslogg'],['ny','Ny / Redigera'],['tech','Tech Foundation']]},
+    {id:'f',label:'Felsökning',items:[['flog','Felsökningslogg'],['fny','Ny felsökning']]},
+    {id:'i',label:'Inställningar',items:[['processer','Processer'],['import','Importera']]}
+  ];
+  var VIEWS=['setup','andringar','visa','ny','tech','flog','fvisa','fny','processer','import'];
+  function renderMenu(v){
+    var main=$('mainNav'),sub=$('subNav');
+    main.hidden=sub.hidden=!db||v==='setup';
+    var cur=v==='visa'?'andringar':v==='fvisa'?'flog':v;
+    var g=MENU.filter(function(m){return m.items.some(function(i){return i[0]===cur})})[0];
+    main.innerHTML=MENU.map(function(m){return '<button type="button" data-g="'+m.id+'"'+(g&&g.id===m.id?' aria-current="page"':'')+'>'+esc(m.label)+'</button>'}).join('');
+    sub.innerHTML=g?g.items.map(function(i){return '<button type="button" data-v="'+i[0]+'"'+(i[0]===cur?' aria-current="page"':'')+'>'+esc(i[1])+'</button>'}).join(''):'';
+  }
   function show(v){
     if(VIEWS.indexOf(v)<0)v='andringar';
     if(!db)v='setup';
     if(v==='visa'&&!viewing)v='andringar';
-    document.querySelector('nav.tabs').hidden=!db;
+    if(v==='fvisa'&&!fsViewing)v='flog';
     VIEWS.forEach(function(x){$('v-'+x).hidden=x!==v});
-    document.querySelectorAll('nav.tabs button').forEach(function(b){
-      if(b.dataset.view===(v==='visa'?'andringar':v))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
-    });
+    renderMenu(v);
     if(location.hash!=='#'+v)location.hash=v;
     if(v==='ny'&&!editing&&!orig&&!$('datum').value)newForm();
+    if(v==='fny'){fsRefreshForm();if(!fsEdit&&!fsOrig&&!$('fForm').children.length)fsNew()}
   }
   window.addEventListener('hashchange',function(){show(location.hash.replace('#',''))});
-  document.querySelectorAll('nav.tabs button').forEach(function(b){b.onclick=function(){show(b.dataset.view)}});
+  $('mainNav').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-g]');if(!b)return;
+    var m=MENU.filter(function(x){return x.id===b.dataset.g})[0];if(m)show(m.items[0][0]);
+  });
+  $('subNav').addEventListener('click',function(e){var b=e.target.closest('button[data-v]');if(b)show(b.dataset.v)});
 
   // ---------- händelser ----------
   $('goNew').onclick=function(){newForm();show('ny')};
-  $('newChange').onclick=function(){newForm()};
   $('cancelBtn').onclick=function(){show('andringar')};
   $('saveBtn').onclick=save;
-  $('applyProc').onclick=applyProc;
-  $('procSel').onchange=function(){if(!editing)applyProc();else render()};
+  $('newBtn').onclick=function(){newForm()};
+  $('procSel').onchange=function(){applyProc()};
   $('ovReset').onclick=function(){OV.forEach(function(k){$(k).dataset.touched='0'});render()};
   $('exportCsv').onclick=exportCsv;
   $('chips').onclick=function(e){var b=e.target.closest('[data-chip]');if(b){chip=b.dataset.chip;renderList()}};
@@ -798,6 +1088,8 @@
   document.addEventListener('input',function(e){
     var t=e.target,id=t.id||'';
     if(id.indexOf('ov_')===0)t.dataset.touched='1';
+    if(id==='ansvarig'&&!initTouched)set('initialer',autoInit(val('ansvarig')));
+    if(id==='initialer')initTouched=val('initialer').trim()!==autoInit(val('ansvarig'));
     if(!$('v-ny').contains(t))return;
     render();
   });
@@ -814,19 +1106,6 @@
     }
     try{navigator.clipboard.writeText(text).then(function(){msg(msgId,'Kopierad.')},fallback)}catch(e){fallback()}
   }
-  function copyRich(html,plain,msgId,selEl){
-    function fb(){copyPlain(plain,msgId,selEl)}
-    try{
-      if(window.ClipboardItem&&navigator.clipboard.write){
-        navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})])
-          .then(function(){msg(msgId,'Kopierad med formatering.')},fb);
-      }else fb();
-    }catch(e){fb()}
-  }
-  $('copy').onclick=function(){copyRich('<div style="'+FONT+'font-size:12pt">'+buildHtml()+'</div>',build(),'copyMsg',$('out'))};
-  $('copyOv').onclick=function(){
-    copyRich('<table><tr>'+ovRow(true).map(function(c){return '<td style="'+FONT+'font-size:12pt">'+c+'</td>'}).join('')+'</tr></table>',ovRow(false).join('\t'),'copyOvMsg',$('ovTable'));
-  };
   $('copyFolder').onclick=function(){if(!clean(BAK)){msg('folderMsg','Ingen backupmapp är angiven. Fyll i den under Processer.');return}copyPlain(clean(BAK),'folderMsg',null)};
 
   // ---------- konfliktkopior (OneDrive) ----------
@@ -887,6 +1166,23 @@
       if(viewing&&!$('v-visa').hidden)renderDetail();
       if(!backedUp&&canWrite){backedUp=true;db.hasBackupToday().then(function(has){if(!has)db.backup('auto')}).catch(function(){})}
     },dbError);
+    db.collection('felsokning').onSnapshot(function(snap){
+      var all=snap.docs.map(function(x){return Object.assign({},x.data(),{_id:x.id})});
+      fsRecs=all.filter(function(r){return /^F\d+$/.test(r._id)});
+      var fc=all.length-fsRecs.length,box=$('fconflictBox');
+      box.hidden=!fc;box.innerHTML=fc?'<p><b>Konfliktkopior hittades i mappen felsokning.</b> Två personer har sparat samma felsökning samtidigt. Öppna mappen i SharePoint eller Utforskaren, jämför filerna och ta bort kopian.</p>':'';
+      fsLoaded=true;fsRenderList();
+      if(fsViewing&&!$('v-fvisa').hidden)fsRenderDetail();
+    },dbError);
+    db.doc('settings/felsokning').onSnapshot(function(x){
+      var v=x.exists?x.data():null;
+      FF=(v&&v.fields&&v.fields.length)?clone(v.fields):clone(FF_DEFAULT);
+      var typing=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#ffields');
+      if(!typing)ffRender();
+      fsRenderList();
+      fsFormStale=true;
+      if($('v-fny').hidden)fsRefreshForm();
+    },function(){});
     db.collection('techlog').onSnapshot(function(snap){
       techEntries=snap.docs.map(function(x){return Object.assign({},x.data(),{_id:x.id})});
       techLoaded=true;renderTech();
@@ -895,7 +1191,7 @@
     db.startPolling();
     setInterval(updateSync,5000);updateSync();
     renderProcs();renderList();renderTech();
-    newForm();fillProcSel();
+    newForm();fillProcSel();fsNew();ffRender();fsRenderList();
     var h=location.hash.replace('#','');
     show(h&&h!=='setup'?h:'andringar');
   }

@@ -6,6 +6,7 @@
  *   changes/<id>.json      en fil per ändring (inkl. historik)
  *   processes/<id>.json    en fil per process
  *   techlog/<id>.json      en fil per loggboksanteckning
+ *   felsokning/<id>.json   en fil per felsökning (F001.json, …)
  *   settings/app.json      gemensamma inställningar
  *   images/<fil>           bilder
  *   backup/                säkerhetskopior
@@ -16,7 +17,7 @@
   'use strict';
 
   var POLL_MS = 10000;
-  var FOLDERS = ['changes', 'processes', 'techlog', 'settings', 'images', 'backup'];
+  var FOLDERS = ['changes', 'processes', 'techlog', 'felsokning', 'settings', 'images', 'backup'];
 
   // ---------- IndexedDB: kom ihåg vald mapp mellan besök ----------
   function idb() {
@@ -209,7 +210,7 @@
   // ---------- Säkerhetskopia (en JSON-fil med allt) ----------
   FileDB.prototype.backup = async function (label) {
     var self = this, out = { created: new Date().toISOString(), format: 1 };
-    ['changes', 'processes', 'techlog', 'settings'].forEach(function (n) { out[n] = self.collection(n).all(); });
+    ['changes', 'processes', 'techlog', 'felsokning', 'settings'].forEach(function (n) { out[n] = self.collection(n).all(); });
     var t = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; };
     var name = 'backup-' + t.getFullYear() + '-' + p(t.getMonth() + 1) + '-' + p(t.getDate()) + '-' + p(t.getHours()) + p(t.getMinutes()) + (label ? '-' + label : '') + '.json';
     await this.putFile('backup', name, new Blob([JSON.stringify(out)], { type: 'application/json' }));
