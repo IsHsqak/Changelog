@@ -112,3 +112,12 @@ ul.hist .chg i{color:var(--muted);font-style:normal}
 .frow:last-child{border-bottom:0}
 @media(max-width:700px){.frow{grid-template-columns:auto minmax(0,1fr)}.frow>*:nth-child(n+3){grid-column:2}}
 .fhead{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+.mxrow{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:8px 0;border-top:1px solid var(--line)}
+.mxrow:first-of-type{border-top:0}
+.mxrow .l{font-size:.85rem;color:var(--muted);font-weight:600;padding-top:6px}
+.mxrow .v{background:var(--field);border:1px solid var(--line);border-radius:3px;padding:6px 10px;min-height:34px;overflow-wrap:anywhere;white-space:pre-wrap}
+.mxrow .v.ph{color:var(--muted);font-style:italic}
+.mxrow .src{grid-column:2/4;font-size:.75rem;color:var(--muted)}
+.mxrow button.done{border-color:var(--ok);color:var(--ok)}
+@media(max-width:560px){.mxrow{grid-template-columns:minmax(0,1fr) auto}.mxrow .l{grid-column:1/3;padding-top:0}.mxrow .src{grid-column:1/3}}

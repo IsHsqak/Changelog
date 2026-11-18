@@ -275,11 +275,20 @@
     <h2 id="fFormTitle">Ny felsökning</h2>
     <div class="grid2" id="fForm"></div>
   </section>
+  <section class="card" id="fMx">
+    <h2>Maximo</h2>
+    <div class="grid2">
+      <label>Inventarie i Maximo<select id="fx_mxinv"></select></label>
+      <label>Tid (t:mm)<input type="text" id="fx_tid" placeholder="5:00"></label>
+    </div>
+    <p class="hint" id="fMxHint"></p>
+  </section>
   <section class="card">
     <div class="callout" id="fFormMsg" hidden></div>
     <div class="row">
       <button type="button" class="primary" id="fSave">Spara felsökning</button>
       <button type="button" id="fNewBtn">Ny felsökning</button>
+      <button type="button" id="fToMx" disabled>Till Maximo</button>
       <button type="button" id="fCancel">Till listan</button>
       <span class="status" id="fSaveMsg" role="status"></span>
     </div>
@@ -365,6 +374,8 @@
       <label>Maskin<input type="text" id="p_maskin"></label>
       <label>PLC‑plattform<input type="text" id="p_plc"></label>
     </div>
+    <label>Maximo-poster (Inventarie, Beskrivning, Placering)<textarea id="p_mx" rows="5" placeholder="131321&#9;PLC ATS fixturladdning 1&#9;FIXTURLADD1"></textarea></label>
+    <p class="hint" id="p_mx_hint">En post per rad. Sök fram inventarierna i Maximo, markera raderna och klistra in dem här. Varje rad ger ett val i rullistan Inventarie i Maximo när någon skriver en felsökning för processen.</p>
     <div class="row">
       <button type="button" class="primary" id="saveProc">Spara process</button>
       <button type="button" id="newProc">Ny process</button>
@@ -388,6 +399,12 @@
   </section>
   <section class="card">
     <h2>Inställningar och säkerhetskopia</h2>
+    <h3 style="margin:0;font-size:.82rem;color:var(--muted)">Maximo, standardvärden för teamet</h3>
+    <div class="grid2">
+      <label>Arbetstyp<input type="text" id="s_mx_typ" placeholder="AAU"></label>
+      <label>Arbetsgrupp<input type="text" id="s_mx_grp" placeholder="CBAUTO"></label>
+      <label>Standardtid (t:mm)<input type="text" id="s_mx_tid" placeholder="5:00"></label>
+    </div>
     <label>Backupmapp (gemensam)<input type="text" id="s_bak"></label>
     <div class="row"><button type="button" class="primary" id="saveSet">Spara inställning</button><span class="status" id="setMsg" role="status"></span></div>
     <p class="hint">En säkerhetskopia av alla ändringar, processer och loggboksanteckningar sparas automatiskt en gång per dag i mappen backup. Du kan skapa en när som helst. Äldre kopior tas inte bort automatiskt.</p>
