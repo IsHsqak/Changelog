@@ -11,7 +11,7 @@
   function clone(o){return JSON.parse(JSON.stringify(o))}
   function indent(v){return String(v).trim().split('\n').join('\n  ')}
 
-  var BAK='';
+  var BAK='',MX={typ:'',grp:'',tid:''};
 
   var FIELDS=['id','datum','ansvarig','initialer','fabrik','maskin','plc','progblock','datablock','hmi','fplc','komm','ovrigt','beskrivning','orsak','annat','saf','kval','saf_txt','kval_txt','bak_efter','verifierad','status','kommentar'];
   var OV=['ov_block','ov_besk','ov_orsak','ov_komm','ov_verif','ov_godk'];
@@ -362,18 +362,26 @@
     var t=$('procTbl');
     if(!loaded.procs){t.innerHTML='<tr><td class="empty">Laddar …</td></tr>'}
     else if(!procs.length){t.innerHTML='<tr><td class="empty">Inga processer ännu. Lägg till processer längre ned på sidan.</td></tr>'}
-    else t.innerHTML='<thead><tr><th>Process</th><th>Fabrik</th><th>Maskin</th><th>PLC‑plattform</th></tr></thead><tbody>'+
-      procs.map(function(p){return '<tr><td><button type="button" class="idbtn" data-proc="'+esc(p._id)+'" style="font-family:inherit">'+esc(p.name)+'</button></td><td>'+esc(p.fabrik)+'</td><td>'+esc(p.maskin)+'</td><td>'+esc(p.plc)+'</td></tr>'}).join('')+'</tbody>';
+    else t.innerHTML='<thead><tr><th>Process</th><th>Fabrik</th><th>Maskin</th><th>PLC‑plattform</th><th>Maximo-poster</th></tr></thead><tbody>'+
+      procs.map(function(p){return '<tr><td><button type="button" class="idbtn" data-proc="'+esc(p._id)+'" style="font-family:inherit">'+esc(p.name)+'</button></td><td>'+esc(p.fabrik)+'</td><td>'+esc(p.maskin)+'</td><td>'+esc(p.plc)+'</td><td>'+((p.maximo&&p.maximo.length)||'')+'</td></tr>'}).join('')+'</tbody>';
   }
+  function parseMx(t){
+    return String(t||'').split(/\r?\n/).map(function(l){
+      var c=(l.indexOf('\t')>=0?l.split('\t'):l.split(';')).map(function(x){return x.trim()});
+      return {inv:c[0]||'',besk:c[1]||'',plac:c[2]||''};
+    }).filter(function(p){return p.inv&&String(p.inv).toLowerCase()!=='inventarie'});
+  }
+  function mxText(list){return (list||[]).map(function(p){return [p.inv,p.besk,p.plac].join('\t')}).join('\n')}
   function editProc(p){
     editingProc=p?p._id:null;
     $('pEditTitle').textContent=p?('Redigera process: '+p.name):'Ny process';
     ['name','fabrik','maskin','plc'].forEach(function(k){set('p_'+k,p?p[k]:'')});
+    set('p_mx',p?mxText(p.maximo):'');
     $('delProc').hidden=!p;confirmDel=false;$('delProc').textContent='Ta bort process';
   }
   async function saveProc(){
     if(!db||!canWrite)return;
-    var d={name:val('p_name').trim(),fabrik:val('p_fabrik'),maskin:val('p_maskin').trim(),plc:val('p_plc').trim()};
+    var d={name:val('p_name').trim(),fabrik:val('p_fabrik'),maskin:val('p_maskin').trim(),plc:val('p_plc').trim(),maximo:parseMx(val('p_mx'))};
     if(!d.name){msg('procMsg','Ange ett namn på processen.');return}
     try{
       if(editingProc){var p=procById(editingProc);d.order=p?p.order:999;await db.doc('processes/'+editingProc).set(d)}
@@ -754,6 +762,14 @@
     if(f.type==='long')return '<label style="grid-column:1/-1">'+l+'<textarea id="'+id+'"></textarea></label>';
     return '<label>'+l+'<input type="text" id="'+id+'"></label>';
   }
+  function fsFillMx(procId,sel){
+    var s=$('fx_mxinv');if(!s)return;
+    var p=procById(procId),list=(p&&p.maximo)||[];
+    s.innerHTML='<option value="">'+(list.length?'Välj inventarie …':'')+'</option>'+list.map(function(x){return '<option value="'+esc(x.inv)+'">'+esc(x.inv+'  '+x.besk+(x.plac?' ('+x.plac+')':''))+'</option>'}).join('');
+    if(sel&&!list.some(function(x){return x.inv===sel})){var o=document.createElement('option');o.value=sel;o.textContent=sel;s.appendChild(o)}
+    s.value=sel||'';
+    $('fMxHint').textContent=!p?'Välj process först.':list.length?'':'Processen har inga Maximo-poster. Lägg till dem under Inställningar, Processer.';
+  }
   function fsRenderImages(){
     var el=$('fsImgList');if(!el)return;
     el.innerHTML=galleryHtml(fsImages,canWrite&&db);hydrateImages(el);
@@ -769,7 +785,10 @@
     });
     fsImages=(rec.images||[]).slice();fsSession={};fsRenderImages();
     var ps=$('fx_process');
+    fsFillMx(rec.procId,rec.mxInv);
+    $('fx_tid').value=rec.tid==null?'':rec.tid;
     if(ps)ps.onchange=function(){
+      fsFillMx(ps.value,'');
       var p=procById(ps.value);if(!p)return;
       ['fabrik','maskin'].forEach(function(k){var el=$('fx_'+k);if(el&&p[k])el.value=p[k]});
     };
@@ -790,6 +809,7 @@
     }
   }
   function fsSetTitle(id){
+    $('fToMx').disabled=!id;
     $('fFormTitle').textContent=id?('Felsökning '+id):'Ny felsökning';
     $('fFormMsg').hidden=true;
     if(id)renderHist((fsOrig&&fsOrig.history)||[],'fHistForm','Felsökningen');
@@ -797,7 +817,7 @@
   }
   function fsNew(){
     fsEdit=null;fsOrig=null;
-    var rec={datum:today(),ansvarig:me.name||prefs.ansvarig||''};
+    var rec={datum:today(),ansvarig:me.name||prefs.ansvarig||'',tid:MX.tid};
     var st=ffById('status');if(st&&st.opts&&st.opts.length)rec.status=st.opts[0];
     fsBuildForm(rec);fsSetTitle(null);
   }
@@ -818,6 +838,9 @@
       d[f.id]=el.value.trim();
     });
     d.images=fsImages.slice();
+    var inv=$('fx_mxinv')?$('fx_mxinv').value:'',pp=procById(d.procId),hit=((pp&&pp.maximo)||[]).filter(function(x){return x.inv===inv})[0];
+    d.mxInv=inv;d.mxPlac=hit?hit.plac:(fsOrig&&fsOrig.mxInv===inv?(fsOrig.mxPlac||''):'');
+    d.tid=$('fx_tid').value.trim();
     return d;
   }
   function fsDiff(a,b){
@@ -831,6 +854,7 @@
       var p=fsValue(a,f),q=fsValue(b,f);
       if(p!==q)out.push({f:f.label,from:p.slice(0,300),to:q.slice(0,300)});
     });
+    [['mxInv','Inventarie (Maximo)'],['tid','Tid']].forEach(function(k){var p=String(a[k[0]]||''),q=String(b[k[0]]||'');if(p!==q)out.push({f:k[1],from:p,to:q})});
     return out;
   }
   async function fsClaimId(data){
@@ -950,6 +974,45 @@
   }
 
   // visa
+  var fsMxRows=[];
+  function fsMxCard(r){
+    var ph='Ej ifyllt';
+    fsMxRows=[
+      ['Beskrivning',flat(r.symtom),'Symptom'],
+      ['Åtgärd',String(r.atgard||'').trim(),'Åtgärd'],
+      ['Lång beskrivning',String(r.orsak||'').trim(),'Orsak. Klistras in via knappen Lång beskrivning under Åtgärd'],
+      ['Placering',r.mxPlac||'','Vald inventarie'],
+      ['Inventarie',r.mxInv||'','Välj i felsökningen'],
+      ['Arbetstyp',MX.typ,'Inställningar'],
+      ['Tid',r.tid||'','Felsökningen'],
+      ['Arbetsgrupp',MX.grp,'Inställningar']
+    ];
+    var h=fsMxRows.map(function(x,i){
+      var cnt=i===0&&x[1]?' <span class="hint">('+x[1].length+' tecken)</span>':'';
+      return '<div class="mxrow"><div class="l">'+esc(x[0])+cnt+'</div><div class="v'+(x[1]?'':' ph')+'">'+esc(x[1]||ph)+'</div><button type="button" data-mxcopy="'+i+'"'+(x[1]?'':' disabled')+'>Kopiera</button><div class="src">Från: '+esc(x[2])+'</div></div>';
+    }).join('');
+    return '<section class="card" id="mxCard"><div class="row"><h2 style="flex:1 1 auto">Till Maximo</h2><button type="button" class="primary" data-mxall="1">Kopiera allt som text</button></div>'+
+      '<p class="hint">Kopiera fältet och klistra in det i samma fält i Maximo. Ansvarig, På begäran av, AO Arbetsledare och Kontosträng fyller du i eller får du från Maximo.</p>'+h+
+      '<div class="mxrow"><div class="l">Arbetsorder</div><div><input type="text" id="mxAo" value="'+esc(r.aoNr||'')+'" aria-label="Arbetsordernummer i Maximo"'+(canWrite&&db?'':' disabled')+'></div><button type="button" id="mxAoSave"'+(canWrite&&db?'':' disabled')+'>Spara</button><div class="src">Klistra in numret när du har sparat arbetsordern i Maximo.</div></div>'+
+      '<span class="status" id="mxMsg" role="status"></span></section>';
+  }
+  function mxCopy(text,btn){
+    function ok(){var o=btn.textContent;btn.textContent='Kopierat';btn.classList.add('done');setTimeout(function(){btn.textContent=o;btn.classList.remove('done')},1400)}
+    function fb(){var a=document.createElement('textarea');a.value=text;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){msg('mxMsg','Kunde inte kopiera. Markera texten och tryck Ctrl+C.')}a.remove()}
+    try{navigator.clipboard.writeText(text).then(ok,fb)}catch(e){fb()}
+  }
+  async function mxSaveAo(){
+    if(!db||!canWrite||!fsViewing)return;
+    var v=val('mxAo').trim();
+    try{
+      var ref=db.doc('felsokning/'+fsViewing),cur=await ref.get();if(!cur.exists)return;
+      var cd=cur.data(),old=cd.aoNr||'';if(old===v){msg('mxMsg','Ingen ändring.');return}
+      var now=new Date().toISOString();
+      cd.aoNr=v;cd.updatedAt=now;cd.updatedBy=meName();
+      cd.history=(cd.history||[]).concat([{at:now,by:meName(),kind:'update',changes:[{f:'Arbetsorder (Maximo)',from:old,to:v}]}]);
+      await ref.set(cd);msg('mxMsg','Arbetsordernumret sparades.');
+    }catch(e){msg('mxMsg','Det gick inte att spara numret.')}
+  }
   function fsRenderDetail(){
     var r=fsRecs.filter(function(x){return x._id===fsViewing})[0];
     if(!r){$('fdetail').innerHTML='<section class="card"><p class="empty">Felsökningen hittades inte.</p></section>';$('fTitle').textContent='Felsökning';$('fStatus').innerHTML='';$('fMeta').textContent='';return}
@@ -959,7 +1022,7 @@
     var rows=[];
     ffOn().forEach(function(f){if(f.type==='images')return;rows.push([f.label,fsValue(r,f)])});
     var gal=(r.images&&r.images.length)?'<div class="gallery">'+galleryHtml(r.images,false)+'</div>':'';
-    $('fdetail').innerHTML='<section class="card"><h2>Uppgifter</h2>'+kv(rows)+gal+'</section>';
+    $('fdetail').innerHTML='<section class="card"><h2>Uppgifter</h2>'+kv(rows)+gal+'</section>'+fsMxCard(r);
     var when=function(t){return t?new Date(t).toLocaleString('sv-SE'):''};
     var t=(r.imported?'Importerad':'Skapad')+' '+when(r.createdAt)+(r.createdBy?' av '+r.createdBy:'');
     if(r.updatedAt&&r.updatedAt!==r.createdAt)t+='. Senast ändrad '+when(r.updatedAt)+(r.updatedBy?' av '+r.updatedBy:'');
@@ -1023,6 +1086,13 @@
   $('fSave').onclick=fsSave;
   $('fExport').onclick=fsExport;
   $('fBack').onclick=function(){show('flog')};
+  $('fdetail').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    if(b.dataset.mxcopy!=null)mxCopy(fsMxRows[+b.dataset.mxcopy][1],b);
+    else if(b.dataset.mxall)mxCopy(fsMxRows.filter(function(x){return x[1]}).map(function(x){return x[0]+': '+x[1]}).join('\n'),b);
+    else if(b.id==='mxAoSave')mxSaveAo();
+  });
+  $('fToMx').onclick=function(){if(fsEdit)fsShowDetail(fsEdit)};
   $('fEditBtn').onclick=function(){if(fsViewing)fsOpen(fsViewing)};
   $('fchips').onclick=function(e){var b=e.target.closest('[data-fchip]');if(b){fsChip=b.dataset.fchip;fsRenderList()}};
   $('ftbl').onclick=function(e){var b=e.target.closest('[data-fopen]');if(b)fsShowDetail(b.dataset.fopen)};
@@ -1095,7 +1165,7 @@
   $('saveSet').onclick=async function(){
     if(!db||!canWrite)return;
     var v=val('s_bak').trim();
-    try{await db.doc('settings/app').set({bakmapp:v});msg('setMsg','Inställning sparad.')}catch(e){msg('setMsg','Det gick inte att spara.')}
+    try{await db.doc('settings/app').set({bakmapp:v,mx:{typ:val('s_mx_typ').trim(),grp:val('s_mx_grp').trim(),tid:val('s_mx_tid').trim()}});msg('setMsg','Inställning sparad.')}catch(e){msg('setMsg','Det gick inte att spara.')}
   };
   document.addEventListener('input',function(e){
     var t=e.target,id=t.id||'';
@@ -1199,7 +1269,7 @@
       techEntries=snap.docs.map(function(x){return Object.assign({},x.data(),{_id:x.id})});
       techLoaded=true;renderTech();
     },dbError);
-    db.doc('settings/app').onSnapshot(function(x){var v=x.exists?x.data():null;BAK=(v&&v.bakmapp)||'';set('s_bak',BAK);render()},function(){});
+    db.doc('settings/app').onSnapshot(function(x){var v=x.exists?x.data():null;BAK=(v&&v.bakmapp)||'';set('s_bak',BAK);MX=Object.assign({typ:'',grp:'',tid:''},(v&&v.mx)||{});set('s_mx_typ',MX.typ);set('s_mx_grp',MX.grp);set('s_mx_tid',MX.tid);render();if(fsViewing&&!$('v-fvisa').hidden)fsRenderDetail()},function(){});
     db.startPolling();
     setInterval(updateSync,5000);updateSync();
     renderProcs();renderList();renderTech();
